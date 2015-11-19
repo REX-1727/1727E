@@ -1,0 +1,213 @@
+#include "main.h"
+#include "string.h"
+
+TaskHandle ultTask;
+
+void setFullPower(int port, bool direction) {
+	int power = 127;
+	if (!direction) {
+		power *= -1;
+	}
+	motorSet(port, power);
+}
+
+void setTowerAndIntake() {
+	if (joystickGetDigital(1, 5, JOY_UP)) {
+		setFullPower(3, true);
+		setFullPower(8, true);
+	} else if (joystickGetDigital(1, 5, JOY_DOWN)) {
+		setFullPower(3, false);
+		setFullPower(8, false);
+	} else {
+		motorStop(3);
+		motorStop(8);
+	}
+}
+
+// Catapult functions
+
+void setCatapultMotorsToFull(bool direction) {
+	setFullPower(4, direction);
+	setFullPower(5, direction);
+	setFullPower(6, direction);
+	setFullPower(7, direction);
+}
+
+void stopCatapultMotors() {
+	motorStop(4);
+	motorStop(5);
+	motorStop(6);
+	motorStop(7);
+}
+
+void setCatapultMotors() {
+	if (joystickGetDigital(1, 6, JOY_DOWN)) {
+		setCatapultMotorsToFull(true);
+	} else if (joystickGetDigital(1, 6, JOY_UP)) {
+		setCatapultMotorsToFull(false);
+	} else {
+		stopCatapultMotors();
+	}
+}
+
+void playSound() {
+	speakerPlayRtttl(
+			"Eyeofthe:d=4,o=5,b=112:8d, 8e, 8f, 8p, 8f, 16f, 8f, 16p, 8e, 8d, 8c, 8c, 8d, 8e, 8d, 8p, 8d, 8e, 8f, 16p, 32p, 8e, 8f, 8g, 16p, 32p, 8f, 8g, 2a, 4p, 8d, 16c, 8d, 16p, 8c");
+}
+
+void checkUlt(void *ignore) {
+	Ultrasonic ult = ultrasonicInit(12, 1);
+	while (1) {
+		int ultVal = ultrasonicGet(ult);
+		lcdPrint(uart1, 2, "Ult: %d", ultVal);
+		if (ultVal != 0 && ultVal < 40) {
+			stopCatapultMotors();
+		}
+		taskDelay(200);
+	}
+}
+
+void pullCatapultBack(int potVal, int newPotVal) {
+	int diff = potVal - newPotVal;
+	taskResume(ultTask);
+	while (abs(diff) < 810) {
+		newPotVal = analogRead(1);
+		diff = potVal - newPotVal;
+		setFullPower(4, false);
+		setFullPower(5, false);
+		setFullPower(6, false);
+		setFullPower(7, false);
+		delay(20);
+	}
+	taskSuspend(ultTask);
+}
+
+void launchCatapult(int length) {
+	setFullPower(4, false);
+	setFullPower(5, false);
+	setFullPower(6, false);
+	setFullPower(7, false);
+	delay(length);
+}
+
+void checkCatapult(void *ignore) {
+	int potVal, newPotVal;
+	while (1) {
+		if (joystickGetDigital(1, 8, JOY_DOWN)) {
+			potVal = analogRead(1);
+			newPotVal = potVal;
+			// Pull back catapult and prepare for launch
+			pullCatapultBack(potVal, newPotVal);
+
+			// Push back on motors to resist elasticity
+			int motorResistance = -10;
+			motorSet(4, motorResistance);
+			motorSet(5, motorResistance);
+			motorSet(6, motorResistance);
+			motorSet(7, motorResistance);
+		}
+		if (joystickGetDigital(1, 8, JOY_DOWN)) {
+			launchCatapult(750);
+			stopCatapultMotors();
+		}
+		taskDelay(20);
+	}
+}
+
+void checkForIndiv() {
+	if (!joystickGetDigital(1, 8, JOY_UP)) {
+		if (joystickGetDigital(1, 7, JOY_UP)) {
+			setFullPower(8, true);
+		} else if (joystickGetDigital(1, 7, JOY_DOWN)) {
+			setFullPower(8, false);
+		} else if (!(joystickGetDigital(1, 5, JOY_UP)
+				|| joystickGetDigital(1, 5, JOY_DOWN))) {
+			motorStop(8);
+		}
+	} else {
+		if (joystickGetDigital(1, 7, JOY_UP)) {
+			setFullPower(3, true);
+		} else if (joystickGetDigital(1, 7, JOY_DOWN)) {
+			setFullPower(3, false);
+		} else if (!(joystickGetDigital(1, 5, JOY_UP)
+				|| joystickGetDigital(1, 5, JOY_DOWN))) {
+			motorStop(3);
+		}
+	}
+}
+
+// LCD functions
+
+bool checkBattery(int *lcd) {
+	bool backlight = false; // Off by default
+	if (powerLevelMain() == 0) { // Turn on backlight if powered by computer
+		backlight = true;
+	}
+	lcdSetBacklight(lcd, backlight);
+	return backlight;
+}
+
+bool checkBacklight(int *lcd, bool backlight) {
+	if (lcdReadButtons(lcd) == 1) {
+		// Button 1 is pressed
+		// Toggle backlight
+		backlight = !backlight;
+		lcdSetBacklight(lcd, backlight);
+		// Delay for a half second to allow time to react
+		delay(500);
+	}
+	return backlight;
+}
+
+void showBatteryOnLcd(int *lcd) {
+// Battery capacity is 7200 millivolts (cast to int for rounding purposes)
+	double power = (powerLevelMain() / 10000.0);
+	int roundedPower = (int) (power * 100);
+
+// Display a "bars" representation of remaining battery power (five for 80-100%, four for 60-79%, etc.)
+	int numBars = (int) (power * 5) + 1;
+	char *bars = malloc(256);
+	for (int i = 0; i < numBars; i++) {
+		strcat(bars, "|");
+	}
+	if (power == 0) {
+		// Powered by computer (Cortex battery is turned off or not present)
+		lcdSetText(lcd, 1, "Main power off");
+	} else {
+		lcdPrint(lcd, 1, "Power: %d%% %s", roundedPower, bars);
+	}
+	free(bars); // Release allocated memory to prevent memory leaks
+}
+
+void showPotVals(int *lcd, int port) {
+// Grab potentiometer value and print to LCD
+	int potVal = analogRead(port);
+	lcdPrint(lcd, 1, "Potentiometer");
+	lcdPrint(lcd, 2, "value: %d", potVal);
+}
+
+// Initialization functions
+
+void initBot() {
+	lcdInit(uart1 );
+	lcdInit(uart2 );
+	speakerInit();
+
+	taskCreate(playSound, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+	ultTask = taskCreate(checkUlt, TASK_DEFAULT_STACK_SIZE, NULL,
+			TASK_PRIORITY_DEFAULT);
+	taskSuspend(ultTask);
+	taskCreate(checkCatapult, TASK_DEFAULT_STACK_SIZE, NULL,
+			TASK_PRIORITY_DEFAULT);
+}
+
+bool *initLcdVals() {
+	bool newBacklight = checkBattery(uart1 );
+	bool newSecondBacklight = checkBattery(uart2 );
+	bool backlights[] = { newBacklight, newSecondBacklight };
+
+	bool *backArr = malloc(sizeof(backlights));
+	backArr[0] = backlights[0];
+	backArr[1] = backlights[1];
+	return backArr;
+}
