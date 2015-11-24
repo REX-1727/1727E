@@ -34,21 +34,66 @@
 
 #include "main.h"
 
-void checkForward(void *ignore) {
-	while (1) {
-		while (!analogRead(2)) {
-			motorSet(1, -127);
-			motorSet(2, -127);
-			motorSet(9, -127);
-			motorSet(10, 127);
+void pullBackAndLaunch() {
+	// Launch loaded ball first; will be in the pulled back position initially
+	launchCatapult(750);
+	// Pull back catapult using adjusted potentiometer values
+	for (int i = 0; i < 2; i++) {
+		int potVal, newPotVal;
+		potVal = analogRead(1);
+		newPotVal = potVal;
+		int diff = potVal - newPotVal;
+		while (abs(diff) < 700) {
+			newPotVal = analogRead(1);
+			diff = potVal - newPotVal;
+			setFullPower(4, false);
+			setFullPower(5, false);
+			setFullPower(6, false);
+			setFullPower(7, false);
+			delay(20);
 		}
-		motorStop(1);
-		motorStop(2);
-		motorStop(9);
-		motorStop(10);
-//		pullCatapultBack();
-//		launchCatapult();
+		// Stop motors after pull back & wait for balls to move into catapult hand
+		stopCatapultMotors();
+		delay(1500);
+		// Launch & repeat
+		launchCatapult(750);
+		stopCatapultMotors();
 	}
+}
+void checkForward(void *ignore) {
+	// Move forward until limit switch triggered
+	// Right side runs fast; slow it down
+	while (digitalRead(2)) {
+		motorSet(1, -127 * MULTIPLIER);
+		motorSet(2, -127);
+		motorSet(9, -127);
+		motorSet(10, 127 * MULTIPLIER);
+	}
+
+	// Stop
+	motorStop(1);
+	motorStop(2);
+	motorStop(9);
+	motorStop(10);
+
+	// Pull back catapult & launc appropriate # of times
+	pullBackAndLaunch();
+}
+
+void moveAuto() {
+	// Set motors to proper speeds for 4 seconds
+	motorSet(1, -127 * MULTIPLIER);
+	motorSet(2, -127);
+	motorSet(9, -127);
+	motorSet(10, 127 * MULTIPLIER);
+	delay(4000);
+
+	motorStop(1);
+	motorStop(2);
+	motorStop(9);
+	motorStop(10);
+
+	pullBackAndLaunch();
 }
 
 /*
@@ -71,12 +116,14 @@ void autonomous() {
 		int controllerVal = analogRead(2);
 		if (controllerVal < 1908) {
 			// Auton 1
-			lcdPrint(uart1, 2, "AUTON 1");
+			lcdPrint(uart1, 2, "AUTON 1"); // High goal
 			taskCreate(checkForward, TASK_DEFAULT_STACK_SIZE, NULL,
 					TASK_PRIORITY_DEFAULT);
 		} else {
 			// Auton 2
-			lcdPrint(uart1, 2, "AUTON 2");
+			lcdPrint(uart1, 2, "AUTON 2"); // Low goal
+			taskCreate(moveAuto, TASK_DEFAULT_STACK_SIZE, NULL,
+					TASK_PRIORITY_DEFAULT);
 		}
 	}
 }

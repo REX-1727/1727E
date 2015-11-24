@@ -32,7 +32,6 @@
  * obtained from http://sourceforge.net/projects/freertos/files/ or on request.
  */
 
-#include "api.h"
 #include "functions.h"
 
 /*
@@ -63,14 +62,18 @@ void operatorControl() {
 		motorSet(2, joyLeftVal);
 		motorSet(9, joyLeftVal);
 
-		motorSet(1, -joyRightVal);
-		motorSet(10, joyRightVal);
+		// Right side goes faster than left because it's lighter; slow it down
+		motorSet(1, -joyRightVal * MULTIPLIER);
+		motorSet(10, joyRightVal * MULTIPLIER);
 
 		// Tower and intake control (Y-cabled into ports 3 and 8)
 		setTowerAndIntake();
 
 		// Check for individual control of intake and lift
-		checkForIndiv();
+//		checkForIndiv();
+
+// Check for button control of drive
+		checkForManualDrive();
 
 		// Manual catapult control
 		setCatapultMotors();
