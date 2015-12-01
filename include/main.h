@@ -183,6 +183,16 @@ void checkForIndiv();
  * Stops all of the catapult motors
  */
 void stopCatapultMotors();
+/*
+ * Checks whether LCD button 1 is pressed down and toggles backlights accordingly
+ * @param lcd LCD to check
+ * @param backlight Whether backlight is currently on
+ */
+bool checkBacklight(int *lcd, bool backlight);
+/*
+ * Allows buttons to be used to control drive motors at full power for drive testing
+ */
+void checkForManualDrive();
 // End C++ export structure
 #ifdef __cplusplus
 }

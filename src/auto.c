@@ -60,14 +60,39 @@ void pullBackAndLaunch() {
 		stopCatapultMotors();
 	}
 }
+
+void driveStraight() {
+	// Left side: IME0, MOTOR9
+	// Right side: IME1,MOTOR1
+	int leftWheel = 0, rightWheel = 0, resolution = 30;
+	if (imeGet(0, &leftWheel) && imeGet(1, &rightWheel)) {
+		int leftVel = 0, rightVel = 0;
+		if (imeGetVelocity(0, &leftVel) && imeGetVelocity(1, &rightVel)) {
+			if (leftVel > rightVel) {
+				int newLeftPower = motorGet(9) + resolution, newRightPower =
+						motorGet(1) - resolution;
+				motorSet(9, newLeftPower);
+				motorSet(1, newRightPower);
+			} else if (rightVel > leftVel) {
+				int newLeftPower = motorGet(9) - resolution, newRightPower =
+						motorGet(1) + resolution;
+				motorSet(9, newLeftPower);
+				motorSet(1, newRightPower);
+			}
+		}
+	}
+}
+
 void checkForward(void *ignore) {
 	// Move forward until limit switch triggered
 	// Right side runs fast; slow it down
+	motorSet(1, -127);
+	motorSet(2, 127);
+	motorSet(9, 127);
+	motorSet(10, 127);
+
 	while (digitalRead(2)) {
-		motorSet(1, -127 * MULTIPLIER);
-		motorSet(2, -127);
-		motorSet(9, -127);
-		motorSet(10, 127 * MULTIPLIER);
+		driveStraight();
 	}
 
 	// Stop

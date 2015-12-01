@@ -240,7 +240,7 @@ void initBot() {
 //	taskSuspend(ultTask);
 	taskCreate(checkCatapult, TASK_DEFAULT_STACK_SIZE, NULL,
 			TASK_PRIORITY_DEFAULT);
-	taskCreate(checkVel, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+//	taskCreate(checkVel, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 }
 
 bool *initLcdVals() {

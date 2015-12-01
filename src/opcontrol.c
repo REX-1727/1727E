@@ -62,9 +62,8 @@ void operatorControl() {
 		motorSet(2, joyLeftVal);
 		motorSet(9, joyLeftVal);
 
-		// Right side goes faster than left because it's lighter; slow it down
-		motorSet(1, -joyRightVal * MULTIPLIER);
-		motorSet(10, joyRightVal * MULTIPLIER);
+		motorSet(1, -joyRightVal);
+		motorSet(10, joyRightVal);
 
 		// Tower and intake control (Y-cabled into ports 3 and 8)
 		setTowerAndIntake();
