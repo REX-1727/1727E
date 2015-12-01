@@ -42,6 +42,7 @@
 
 // This prevents multiple inclusion, which isn't bad for this file but is good practice
 #define MAIN_H_
+#define MULTIPLIER 0.63
 
 #include <API.h>
 
@@ -178,6 +179,10 @@ void playSound();
  * Checks to see if intake system is being controlled by left rockers (button group 5) before stopping motors in loop
  */
 void checkForIndiv();
+/*
+ * Stops all of the catapult motors
+ */
+void stopCatapultMotors();
 // End C++ export structure
 #ifdef __cplusplus
 }

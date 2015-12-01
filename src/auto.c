@@ -76,7 +76,7 @@ void checkForward(void *ignore) {
 	motorStop(9);
 	motorStop(10);
 
-	// Pull back catapult & launc appropriate # of times
+	// Pull back catapult & launch appropriate # of times
 	pullBackAndLaunch();
 }
 

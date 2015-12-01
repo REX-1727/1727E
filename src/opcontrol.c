@@ -69,10 +69,7 @@ void operatorControl() {
 		// Tower and intake control (Y-cabled into ports 3 and 8)
 		setTowerAndIntake();
 
-		// Check for individual control of intake and lift
-//		checkForIndiv();
-
-// Check for button control of drive
+		// Check for button control of drive
 		checkForManualDrive();
 
 		// Manual catapult control

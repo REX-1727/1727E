@@ -1,5 +1,6 @@
 #include "main.h"
 #include "string.h"
+#include "math.h"
 
 TaskHandle ultTask;
 
@@ -12,10 +13,10 @@ void setFullPower(int port, bool direction) {
 }
 
 void setTowerAndIntake() {
-	if (joystickGetDigital(1, 5, JOY_UP)) {
+	if (joystickGetDigital(1, 5, JOY_DOWN)) {
 		setFullPower(3, true);
 		setFullPower(8, true);
-	} else if (joystickGetDigital(1, 5, JOY_DOWN)) {
+	} else if (joystickGetDigital(1, 5, JOY_UP)) {
 		setFullPower(3, false);
 		setFullPower(8, false);
 	} else {
@@ -67,10 +68,20 @@ void checkUlt(void *ignore) {
 	}
 }
 
+int getUltVal() {
+	Ultrasonic ult = ultrasonicInit(12, 1);
+	int ultVal = ultrasonicGet(ult);
+	lcdPrint(uart1, 2, "Ult: %d", ultVal);
+	ultrasonicShutdown(ult);
+	return ultVal;
+}
+
 void pullCatapultBack(int potVal, int newPotVal) {
 	int diff = potVal - newPotVal;
-	taskResume(ultTask);
-	while (abs(diff) < 810) {
+//	taskResume(ultTask);
+//	int ultVal = 500;
+	while (abs(diff) < 700) {
+//		ultVal = getUltVal();
 		newPotVal = analogRead(1);
 		diff = potVal - newPotVal;
 		setFullPower(4, false);
@@ -79,7 +90,7 @@ void pullCatapultBack(int potVal, int newPotVal) {
 		setFullPower(7, false);
 		delay(20);
 	}
-	taskSuspend(ultTask);
+//	taskSuspend(ultTask);
 }
 
 void launchCatapult(int length) {
@@ -136,6 +147,27 @@ void checkForIndiv() {
 	}
 }
 
+void checkForManualDrive() {
+	if (joystickGetAnalog(1, 3) == 0 && joystickGetAnalog(1, 2) == 0) {
+		if (joystickGetDigital(1, 7, JOY_UP)) {
+			motorSet(1, -127 * MULTIPLIER);
+			motorSet(2, -127);
+			motorSet(9, -127);
+			motorSet(10, 127 * MULTIPLIER);
+		} else if (joystickGetDigital(1, 7, JOY_DOWN)) {
+			motorSet(1, 127 * MULTIPLIER);
+			motorSet(2, 127);
+			motorSet(9, 127);
+			motorSet(10, -127 * MULTIPLIER);
+		} else {
+			motorStop(1);
+			motorStop(2);
+			motorStop(9);
+			motorStop(10);
+		}
+	}
+}
+
 // LCD functions
 
 bool checkBattery(int *lcd) {
@@ -160,23 +192,13 @@ bool checkBacklight(int *lcd, bool backlight) {
 }
 
 void showBatteryOnLcd(int *lcd) {
-// Battery capacity is 7200 millivolts (cast to int for rounding purposes)
-	double power = (powerLevelMain() / 10000.0);
-	int roundedPower = (int) (power * 100);
-
-// Display a "bars" representation of remaining battery power (five for 80-100%, four for 60-79%, etc.)
-	int numBars = (int) (power * 5) + 1;
-	char *bars = malloc(256);
-	for (int i = 0; i < numBars; i++) {
-		strcat(bars, "|");
-	}
+	int power = powerLevelMain();
 	if (power == 0) {
 		// Powered by computer (Cortex battery is turned off or not present)
 		lcdSetText(lcd, 1, "Main power off");
 	} else {
-		lcdPrint(lcd, 1, "Power: %d%% %s", roundedPower, bars);
+		lcdPrint(lcd, 1, "Power: %d mV", power);
 	}
-	free(bars); // Release allocated memory to prevent memory leaks
 }
 
 void showPotVals(int *lcd, int port) {
@@ -186,19 +208,39 @@ void showPotVals(int *lcd, int port) {
 	lcdPrint(lcd, 2, "value: %d", potVal);
 }
 
+void checkVel() {
+	// Time period in milliseconds
+	int timePeriod = 20;
+	Encoder enc = encoderInit(2, 11, false);
+	int ticks = 0;
+	while (1) {
+		// Read from potentiometer
+		int newTicks = encoderGet(enc);
+		int diff = newTicks - ticks;
+		ticks = newTicks;
+
+		int vel = diff / (timePeriod / 1000.0);
+
+		lcdPrint(uart1, 2, "Vel: %d deg/s", vel);
+		taskDelay(timePeriod);
+	}
+}
+
 // Initialization functions
 
 void initBot() {
 	lcdInit(uart1 );
 	lcdInit(uart2 );
 	speakerInit();
+	imeInitializeAll();
 
 	taskCreate(playSound, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
-	ultTask = taskCreate(checkUlt, TASK_DEFAULT_STACK_SIZE, NULL,
-			TASK_PRIORITY_DEFAULT);
-	taskSuspend(ultTask);
+//	ultTask = taskCreate(checkUlt, TASK_DEFAULT_STACK_SIZE, NULL,
+//			TASK_PRIORITY_DEFAULT);
+//	taskSuspend(ultTask);
 	taskCreate(checkCatapult, TASK_DEFAULT_STACK_SIZE, NULL,
 			TASK_PRIORITY_DEFAULT);
+	taskCreate(checkVel, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 }
 
 bool *initLcdVals() {
