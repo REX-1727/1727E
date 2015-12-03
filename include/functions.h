@@ -177,25 +177,23 @@ void pullBackAndLaunch() {
 void driveStraight() {
 	// Left side: IME0, MOTOR9
 	// Right side: IME1, MOTOR10
-	int leftWheel = 0, rightWheel = 0, resolution = 127;
-	if (imeGet(0, &leftWheel) && imeGet(1, &rightWheel)) {
-		int leftVel = 0, rightVel = 0;
-		if (imeGetVelocity(0, &leftVel) && imeGetVelocity(1, &rightVel)) {
-			if (leftVel > rightVel) {
-				int newLeftPower = motorGet(9) + resolution, newRightPower =
-						motorGet(10) - resolution;
-				motorSet(1, newRightPower);
-				motorSet(2, newLeftPower);
-				motorSet(9, newLeftPower);
-				motorSet(10, newRightPower);
-			} else if (rightVel > leftVel) {
-				int newLeftPower = motorGet(9) - resolution, newRightPower =
-						motorGet(10) + resolution;
-				motorSet(1, newRightPower);
-				motorSet(2, newLeftPower);
-				motorSet(9, newLeftPower);
-				motorSet(10, newRightPower);
-			}
+	int leftVal = 0, rightVal = 0, resolution = 30;
+	if (imeGet(0, &leftVal) && imeGet(1, &rightVal)) {
+		if (leftVal < rightVal) {
+			// Increase left velocity
+			int currentLeftFront = motorGet(2), currentLeftRear = motorGet(9);
+			motorSet(2, currentLeftFront + resolution);
+			motorSet(9, currentLeftRear + resolution);
+		} else if (rightVal < leftVal) {
+			// Increase right velocity
+			int currentRightFront = motorGet(1), currentRightRear = -motorGet(10);
+			motorSet(1, currentRightFront + resolution);
+			motorSet(10, -(currentRightRear + resolution));
+		} else {
+			motorStop(1);
+			motorStop(2);
+			motorStop(9);
+			motorStop(10);
 		}
 	}
 }
