@@ -34,76 +34,7 @@
 
 #include "main.h"
 
-void pullBackAndLaunch() {
-	// Launch loaded ball first; will be in the pulled back position initially
-	launchCatapult(750);
-	// Pull back catapult using adjusted potentiometer values
-	for (int i = 0; i < 2; i++) {
-		int potVal, newPotVal;
-		potVal = analogRead(1);
-		newPotVal = potVal;
-		int diff = potVal - newPotVal;
-		while (abs(diff) < 700) {
-			newPotVal = analogRead(1);
-			diff = potVal - newPotVal;
-			setFullPower(4, false);
-			setFullPower(5, false);
-			setFullPower(6, false);
-			setFullPower(7, false);
-			delay(20);
-		}
-		// Stop motors after pull back & wait for balls to move into catapult hand
-		stopCatapultMotors();
-		delay(1500);
-		// Launch & repeat
-		launchCatapult(750);
-		stopCatapultMotors();
-	}
-}
 
-void driveStraight() {
-	// Left side: IME0, MOTOR9
-	// Right side: IME1,MOTOR1
-	int leftWheel = 0, rightWheel = 0, resolution = 30;
-	if (imeGet(0, &leftWheel) && imeGet(1, &rightWheel)) {
-		int leftVel = 0, rightVel = 0;
-		if (imeGetVelocity(0, &leftVel) && imeGetVelocity(1, &rightVel)) {
-			if (leftVel > rightVel) {
-				int newLeftPower = motorGet(9) + resolution, newRightPower =
-						motorGet(1) - resolution;
-				motorSet(9, newLeftPower);
-				motorSet(1, newRightPower);
-			} else if (rightVel > leftVel) {
-				int newLeftPower = motorGet(9) - resolution, newRightPower =
-						motorGet(1) + resolution;
-				motorSet(9, newLeftPower);
-				motorSet(1, newRightPower);
-			}
-		}
-	}
-}
-
-void checkForward(void *ignore) {
-	// Move forward until limit switch triggered
-	// Right side runs fast; slow it down
-	motorSet(1, -127);
-	motorSet(2, 127);
-	motorSet(9, 127);
-	motorSet(10, 127);
-
-	while (digitalRead(2)) {
-		driveStraight();
-	}
-
-	// Stop
-	motorStop(1);
-	motorStop(2);
-	motorStop(9);
-	motorStop(10);
-
-	// Pull back catapult & launch appropriate # of times
-	pullBackAndLaunch();
-}
 
 void moveAuto() {
 	// Set motors to proper speeds for 4 seconds
@@ -118,7 +49,7 @@ void moveAuto() {
 	motorStop(9);
 	motorStop(10);
 
-	pullBackAndLaunch();
+//	pullBackAndLaunch();
 }
 
 /*
@@ -142,8 +73,8 @@ void autonomous() {
 		if (controllerVal < 1908) {
 			// Auton 1
 			lcdPrint(uart1, 2, "AUTON 1"); // High goal
-			taskCreate(checkForward, TASK_DEFAULT_STACK_SIZE, NULL,
-					TASK_PRIORITY_DEFAULT);
+//			taskCreate(checkForward, TASK_DEFAULT_STACK_SIZE, NULL,
+//					TASK_PRIORITY_DEFAULT);
 		} else {
 			// Auton 2
 			lcdPrint(uart1, 2, "AUTON 2"); // Low goal
