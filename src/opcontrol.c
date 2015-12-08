@@ -32,7 +32,7 @@
  * obtained from http://sourceforge.net/projects/freertos/files/ or on request.
  */
 
-#include "functions.h"
+#include "main.h"
 
 /*
  * Runs the user operator control code. This function will be started in its own task with the
@@ -52,10 +52,10 @@
  * This task should never exit; it should end with some kind of infinite loop, even if empty.
  */
 void operatorControl() {
-	initBot();
 	bool *lcdBacklight = initLcdVals();
+	taskResume(catTask);
 	while (1) {
-		// Set motor values to joystick values
+		//	 Set motor values to joystick values
 		int joyLeftVal = -joystickGetAnalog(1, 3), joyRightVal =
 				joystickGetAnalog(1, 2);
 
@@ -86,15 +86,20 @@ void operatorControl() {
 		lcdBacklight[0] = newBacklight;
 		lcdBacklight[1] = newSecondBacklight;
 
-		int val1, val2;
-		imeGet(0, &val1);
-		imeGet(1, &val2);
+		lcdPrint(uart1, 2, "%d", digitalRead(2));
 
-//		lcdPrint(uart1, 2, "%d, %d", val1, val2);
-		Encoder enc = encoderInit(3, 4, false);
-		lcdPrint(uart1, 2, "%d", encoderGet(enc));
-
+		if (joystickGetDigital(1, 8, JOY_UP)) {
+			int controllerVal = analogRead(2);
+			if (controllerVal < 1908) {
+				// Auton 1 (high goal)
+				checkForward();
+			} else {
+				// Auton 2 (low goal)
+				moveAuto();
+			}
+		}
 		// Delay 20 ms to concede to other tasks
 		delay(20);
 	}
+
 }

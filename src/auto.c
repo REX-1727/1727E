@@ -32,25 +32,7 @@
  * obtained from http://sourceforge.net/projects/freertos/files/ or on request.
  */
 
-#include "main.h"
-
-
-
-void moveAuto() {
-	// Set motors to proper speeds for 4 seconds
-	motorSet(1, -127 * MULTIPLIER);
-	motorSet(2, -127);
-	motorSet(9, -127);
-	motorSet(10, 127 * MULTIPLIER);
-	delay(4000);
-
-	motorStop(1);
-	motorStop(2);
-	motorStop(9);
-	motorStop(10);
-
-//	pullBackAndLaunch();
-}
+#include "functions.h"
 
 /*
  * Runs the user autonomous code. This function will be started in its own task with the default
@@ -66,20 +48,14 @@ void moveAuto() {
  * The autonomous task may exit, unlike operatorControl() which should never exit. If it does
  * so, the robot will await a switch to another mode or disable/enable cycle.
  */
+
 void autonomous() {
-	while (1) {
-		lcdInit(uart1 );
-		int controllerVal = analogRead(2);
-		if (controllerVal < 1908) {
-			// Auton 1
-			lcdPrint(uart1, 2, "AUTON 1"); // High goal
-//			taskCreate(checkForward, TASK_DEFAULT_STACK_SIZE, NULL,
-//					TASK_PRIORITY_DEFAULT);
-		} else {
-			// Auton 2
-			lcdPrint(uart1, 2, "AUTON 2"); // Low goal
-			taskCreate(moveAuto, TASK_DEFAULT_STACK_SIZE, NULL,
-					TASK_PRIORITY_DEFAULT);
-		}
+	int controllerVal = analogRead(2);
+	if (controllerVal < 1908) {
+		// Auton 1 (high goal)
+		checkForward();
+	} else {
+		// Auton 2 (low goal)
+		moveAuto();
 	}
 }

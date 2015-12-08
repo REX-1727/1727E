@@ -162,11 +162,6 @@ void launchCatapult(int length);
  */
 void pullCatapultBack(int potVal, int newPotVal);
 /*
- * Initializes sensors/speakers/LCD/etc. and performs initial checks/tasks
- * @return Bool indicating whether the backlight should be off or on
- */
-void initBot();
-/*
  * Initializes LCD values for battery checks & button toggles
  */bool *initLcdVals();
 /*
@@ -176,7 +171,7 @@ void playSound();
 /*
  * Individual intake/lift control
  * 7 UD control intake unless 8U is pressed down; if it is, it controls lift
- * Checks to see if intake system is being controlled by left rockers (button group 5) before stopping motors in loop
+ * Checks if intake system is being controlled by left rockers (button group 5) before stopping motors in loop
  */
 void checkForIndiv();
 /*
@@ -187,12 +182,35 @@ void stopCatapultMotors();
  * Checks whether LCD button 1 is pressed down and toggles backlights accordingly
  * @param lcd LCD to check
  * @param backlight Whether backlight is currently on
- */
-bool checkBacklight(int *lcd, bool backlight);
+ */bool checkBacklight(int *lcd, bool backlight);
 /*
  * Allows buttons to be used to control drive motors at full power for drive testing
  */
 void checkForManualDrive();
+/*
+ * Autonomous option 1
+ */
+void checkForward();
+/*
+ * Autonomous option 2
+ */
+void moveAuto();
+/*
+ * Corrects wheel movement w/ IMEs to move straight
+ */
+void driveStraight();
+/*
+ * Checks whether the limit switch has been pressed within 3 seconds of autonomous 1 starting
+ */
+void checkLimSwitch();
+/*
+ * Task to handle catapult auto-launching
+ */
+extern TaskHandle catTask;
+/*
+ * Global flag to see whether catapult is being pulled back
+ */
+extern bool running;
 // End C++ export structure
 #ifdef __cplusplus
 }

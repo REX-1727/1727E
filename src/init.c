@@ -58,5 +58,19 @@ void initializeIO() {
  * will not start. An autonomous mode selection menu like the pre_auton() in other environments
  * can be implemented in this task if desired.
  */
+TaskHandle catTask;
 void initialize() {
+	lcdInit(uart1 );
+	lcdInit(uart2 );
+	speakerInit();
+	imeInitializeAll();
+
+	//	taskCreate(playSound, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+	//	ultTask = taskCreate(checkUlt, TASK_DEFAULT_STACK_SIZE, NULL,
+	//			TASK_PRIORITY_DEFAULT);
+	//	taskSuspend(ultTask);
+	catTask = taskCreate(checkCatapult, TASK_DEFAULT_STACK_SIZE, NULL,
+			TASK_PRIORITY_DEFAULT);
+	taskSuspend(catTask);
+	//	taskCreate(checkVel, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 }
