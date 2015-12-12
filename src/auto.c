@@ -51,7 +51,7 @@
 
 void autonomous() {
 	int controllerVal = analogRead(2);
-	if (controllerVal < 1908) {
+	if (controllerVal < AUTON_DECISION_VAL) {
 		// Auton 1 (high goal)
 		checkForward();
 	} else {

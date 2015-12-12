@@ -42,6 +42,16 @@
 
 // This prevents multiple inclusion, which isn't bad for this file but is good practice
 #define MAIN_H_
+// Motors
+#define FRONT_LEFT 1
+#define FRONT_RIGHT 2
+#define BACK_LEFT 10
+#define BACK_RIGHT 9
+#define TOWER 3
+#define INTAKES 8
+
+#define MAX_LAUNCH_VAL 750
+#define AUTON_DECISION_VAL 1908
 #define MULTIPLIER 0.63
 
 #include <API.h>
@@ -156,11 +166,9 @@ void checkCatapult(void *ignore);
 void launchCatapult(int length);
 /*
  * Holds catapult back in preparation for launch
- * @param potVal Initial value of potentiometer
- * @param newPotVal Continuously updated value of potentiometer
- * @param ult Initialized ultrasonic value to pass to task
+ * @param targetDiff Target difference of pot
  */
-void pullCatapultBack(int potVal, int newPotVal);
+void pullCatapultBack(int targetDiff);
 /*
  * Initializes LCD values for battery checks & button toggles
  */bool *initLcdVals();
@@ -185,6 +193,7 @@ void stopCatapultMotors();
  */bool checkBacklight(int *lcd, bool backlight);
 /*
  * Allows buttons to be used to control drive motors at full power for drive testing
+ * Uses MULTIPLIER speed correction
  */
 void checkForManualDrive();
 /*

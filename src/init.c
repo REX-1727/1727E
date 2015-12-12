@@ -72,5 +72,6 @@ void initialize() {
 	catTask = taskCreate(checkCatapult, TASK_DEFAULT_STACK_SIZE, NULL,
 			TASK_PRIORITY_DEFAULT);
 	taskSuspend(catTask);
-	//	taskCreate(checkVel, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+
+//		taskCreate(checkVel, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 }

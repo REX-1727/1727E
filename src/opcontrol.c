@@ -86,18 +86,6 @@ void operatorControl() {
 		lcdBacklight[0] = newBacklight;
 		lcdBacklight[1] = newSecondBacklight;
 
-		lcdPrint(uart1, 2, "%d", digitalRead(2));
-
-		if (joystickGetDigital(1, 8, JOY_UP)) {
-			int controllerVal = analogRead(2);
-			if (controllerVal < 1908) {
-				// Auton 1 (high goal)
-				checkForward();
-			} else {
-				// Auton 2 (low goal)
-				moveAuto();
-			}
-		}
 		// Delay 20 ms to concede to other tasks
 		delay(20);
 	}

@@ -16,14 +16,14 @@ void setFullPower(int port, bool direction) {
 
 void setTowerAndIntake() {
 	if (joystickGetDigital(1, 5, JOY_DOWN)) {
-		setFullPower(3, true);
-		setFullPower(8, true);
+		setFullPower(INTAKES, true);
+		setFullPower(TOWER, true);
 	} else if (joystickGetDigital(1, 5, JOY_UP)) {
-		setFullPower(3, false);
-		setFullPower(8, false);
+		setFullPower(INTAKES, false);
+		setFullPower(TOWER, false);
 	} else {
-		motorStop(3);
-		motorStop(8);
+		motorStop(INTAKES);
+		motorStop(TOWER);
 	}
 }
 
@@ -81,23 +81,29 @@ int getUltVal() {
 	return ultVal;
 }
 
-void pullCatapultBack(int potVal, int newPotVal) {
+/*
+ * targetVal = 2875
+ */
+void pullCatapultBack(int targetDiff) {
 	running = true;
-	int diff = potVal - newPotVal;
-//	taskResume(ultTask);
-//	int ultVal = 500;
-	while (abs(diff) < 2875) {
-//		ultVal = getUltVal();
-		newPotVal = analogRead(1);
-		diff = potVal - newPotVal;
+	int diff = 0;
+	int potVal;
+	int initialPotVal = analogRead(1);
+	//	taskResume(ultTask);
+	//	int ultVal = 500;
+	while (abs(diff) < targetDiff) {
+		//		ultVal = getUltVal();
+		potVal = analogRead(1);
+		diff = initialPotVal - potVal;
 		setFullPower(4, false);
 		setFullPower(5, false);
 		setFullPower(6, false);
 		setFullPower(7, false);
+		lcdPrint(uart1, 2, "%d", diff);
 		delay(20);
 	}
 	running = false;
-//	taskSuspend(ultTask);
+	//	taskSuspend(ultTask);
 }
 
 void launchCatapult(int length) {
@@ -109,14 +115,10 @@ void launchCatapult(int length) {
 }
 
 void checkCatapult(void *ignore) {
-	// Controlled by second joystick
-	int potVal, newPotVal;
 	while (1) {
 		if (joystickGetDigital(1, 8, JOY_DOWN)) {
-			potVal = analogRead(1);
-			newPotVal = potVal;
 			// Pull back catapult and prepare for launch
-			pullCatapultBack(potVal, newPotVal);
+			pullCatapultBack(2875);
 
 			// Push back on motors to resist elasticity
 			int motorResistance = -20;
@@ -126,7 +128,7 @@ void checkCatapult(void *ignore) {
 			motorSet(7, motorResistance);
 		}
 		if (joystickGetDigital(1, 8, JOY_DOWN)) {
-			launchCatapult(750);
+			launchCatapult(MAX_LAUNCH_VAL);
 			stopCatapultMotors();
 		}
 		taskDelay(20);
@@ -145,12 +147,12 @@ void checkForIndiv() {
 		}
 	} else {
 		if (joystickGetDigital(1, 7, JOY_UP)) {
-			setFullPower(3, true);
+			setFullPower(INTAKES, true);
 		} else if (joystickGetDigital(1, 7, JOY_DOWN)) {
-			setFullPower(3, false);
+			setFullPower(INTAKES, false);
 		} else if (!(joystickGetDigital(1, 5, JOY_UP)
 				|| joystickGetDigital(1, 5, JOY_DOWN))) {
-			motorStop(3);
+			motorStop(INTAKES);
 		}
 	}
 }
@@ -210,7 +212,7 @@ void showBatteryOnLcd(int *lcd) {
 }
 
 void showPotVals(int *lcd, int port) {
-// Grab potentiometer value and print to LCD
+	// Grab potentiometer value and print to LCD
 	int potVal = analogRead(port);
 	lcdPrint(lcd, 1, "Potentiometer");
 	lcdPrint(lcd, 2, "value: %d", potVal);
@@ -246,47 +248,120 @@ bool *initLcdVals() {
 }
 
 // AUTON FUNCTIONS
+void runTower(int time, void *ignore) {
+	int delay;
+	switch (time) {
+	case 0:
+		delay = 500;
+		break;
+	case 1:
+		delay = 1000;
+		break;
+	case 2:
+		delay = 1500;
+		break;
+	default:
+		delay = 1000;
+		break;
+	}
+	setFullPower(TOWER, false);
+	taskDelay(delay);
+	motorStop(TOWER);
+}
+
 void pullBackAndLaunch() {
 	// Launch loaded ball first; will be in the pulled back position initially
-	launchCatapult(750);
+	launchCatapult(MAX_LAUNCH_VAL);
 	stopCatapultMotors();
 	// Pull back catapult using adjusted potentiometer values
 	for (int i = 0; i < 2; i++) {
-		int potVal, newPotVal;
-		potVal = analogRead(1);
-		newPotVal = potVal;
-		pullCatapultBack(potVal, newPotVal);
+		// Run to bring in preloaded balls
+		TaskHandle towTask = taskCreate(runTower, TASK_DEFAULT_STACK_SIZE, &i,
+						TASK_PRIORITY_DEFAULT);
+		pullCatapultBack(2975);
 		// Stop motors after pull back & wait for balls to move into catapult hand
 		stopCatapultMotors();
-		delay(1500);
+		delay(500);
 		// Launch & repeat
-		launchCatapult(750);
+		launchCatapult(MAX_LAUNCH_VAL);
 		stopCatapultMotors();
+		taskDelete(towTask);
 	}
 }
 
-void driveStraight() {
+void driveStraight(int target, int time) {
 	// Left side: IME0, MOTOR9
 	// Right side: IME1, MOTOR10
-	int leftVal = 0, rightVal = 0, resolution = 30;
-	if (imeGet(0, &leftVal) && imeGet(1, &rightVal)) {
-		if (leftVal < rightVal) {
-			// Increase left velocity
-			int currentLeftFront = -motorGet(2), currentLeftRear = -motorGet(9);
-			motorSet(2, -(currentLeftFront + resolution));
-			motorSet(9, -(currentLeftRear + resolution));
-		} else if (rightVal < leftVal) {
-			// Increase right velocity
-			int currentRightFront = motorGet(1), currentRightRear = -motorGet(
-					10);
-			motorSet(1, currentRightFront + resolution);
-			motorSet(10, -(currentRightRear + resolution));
-		} else {
-			motorStop(1);
-			motorStop(2);
-			motorStop(9);
-			motorStop(10);
-		}
+
+	// PID loop to drive straight
+	int rightVal = 0;
+	int leftVal = 0;
+	int averageVal = 0;
+	float kP_master, kI_master, kD_master;
+	int masterError, masterPreviousError, masterIntegral, masterDerivative,
+			masterOutput;
+	int startTime = millis();
+
+	float kP_slave, kI_slave, kD_slave;
+	int slaveError, slavePreviousError, slaveIntegral, slaveDerivative,
+			slaveOutput, slaveFinal;
+
+	kP_master = .15;
+	kI_master = .000001;
+	kD_master = .2;
+	kP_slave = .1;
+	kI_slave = 0;
+	kD_slave = 0;
+	masterPreviousError = 0;
+	slavePreviousError = 0;
+	while (millis() < startTime + time) {
+		imeGet(0, &leftVal);
+		imeGet(1, &rightVal);
+
+		rightVal = abs(rightVal);
+		leftVal = abs(leftVal);
+
+		averageVal = (leftVal + rightVal) / 2;
+		masterError = target - averageVal;
+		masterIntegral += masterPreviousError;
+		masterDerivative = masterError - masterPreviousError;
+		if (masterError == 0)
+			masterIntegral = 0;
+		if (masterIntegral > 100)
+			masterIntegral = 100;
+
+		masterOutput = (masterError * kP_master) + (masterIntegral * kI_master)
+				+ (masterDerivative * kD_master), 127;
+
+		if (masterOutput > 127)
+			masterOutput = 127;
+
+		slaveError = leftVal - rightVal;
+		slaveIntegral += slavePreviousError;
+		slaveDerivative = slaveError - slavePreviousError;
+		if (slaveError == 0)
+			slaveIntegral = 0;
+		if (slaveIntegral > 100)
+			slaveIntegral = 100;
+
+		slaveOutput = (slaveError * kP_slave) + (slaveIntegral * kI_slave)
+				+ (slaveDerivative * kD_slave);
+		slaveFinal = masterOutput + slaveOutput;
+
+		lcdPrint(uart1, 1, "M: %d, %d", masterOutput, averageVal);
+		lcdPrint(uart1, 2, "S: %d", slaveFinal);
+		lcdPrint(uart2, 1, "R: %d", rightVal);
+		lcdPrint(uart2, 2, "L: %d", leftVal);
+
+		// Left motor master
+		motorSet(2, -masterOutput);
+		motorSet(9, -masterOutput);
+
+		// Right motor slave
+		motorSet(1, slaveFinal);
+		motorSet(10, -slaveFinal);
+
+		delay(20);
 	}
 }
 
@@ -294,36 +369,8 @@ void checkForward() {
 	// Reset encoder values before moving
 	imeReset(0);
 	imeReset(1);
-	// Set motors to proper speeds until at middle of field
-	int imeVal1, imeVal2;
-	imeGet(0, &imeVal1);
-	imeGet(1, &imeVal2);
-	while (abs(imeVal1) <= 2100 && abs(imeVal2) <= 2100) {
-		motorSet(1, 127);
-		motorSet(2, -127);
-		motorSet(9, -127);
-		motorSet(10, -127);
 
-		imeGet(0, &imeVal1);
-		imeGet(1, &imeVal2);
-	}
-
-	// Move until limit switch triggered
-	while (digitalRead(2)) {
-		motorSet(1, 42);
-		motorSet(2, -42);
-		motorSet(9, -42);
-		motorSet(10, -42);
-	}
-
-	motorSet(2, 127);
-	motorSet(9, 127);
-	delay(100);
-
-	motorStop(1);
-	motorStop(2);
-	motorStop(9);
-	motorStop(10);
+	driveStraight(2200, 5000);
 
 	pullBackAndLaunch();
 }
@@ -332,24 +379,8 @@ void moveAuto() {
 	// Reset encoder values before moving
 	imeReset(0);
 	imeReset(1);
-	// Set motors to proper speeds until at middle of field
-	int imeVal1, imeVal2;
-	imeGet(0, &imeVal1);
-	imeGet(1, &imeVal2);
-	while (abs(imeVal1) <= 1000 && abs(imeVal2) <= 1000) {
-		motorSet(1, 127);
-		motorSet(2, -127);
-		motorSet(9, -127);
-		motorSet(10, -127);
 
-		imeGet(0, &imeVal1);
-		imeGet(1, &imeVal2);
-	}
-
-	motorStop(1);
-	motorStop(2);
-	motorStop(9);
-	motorStop(10);
+	driveStraight(1100, 3000);
 
 	pullBackAndLaunch();
 }
