@@ -59,11 +59,11 @@ void operatorControl() {
 		int joyLeftVal = -joystickGetAnalog(1, 3), joyRightVal =
 				joystickGetAnalog(1, 2);
 
-		motorSet(2, joyLeftVal);
-		motorSet(9, joyLeftVal);
+		motorSet(FRONT_LEFT, joyLeftVal);
+		motorSet(BACK_LEFT, joyLeftVal);
 
-		motorSet(1, joyRightVal);
-		motorSet(10, -joyRightVal);
+		motorSet(FRONT_RIGHT, joyRightVal);
+		motorSet(BACK_RIGHT, -joyRightVal);
 
 		// Tower and intake control (Y-cabled into ports 3 and 8)
 		setTowerAndIntake();

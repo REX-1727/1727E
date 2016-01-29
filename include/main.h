@@ -1,6 +1,6 @@
 /** @file main.h
  * @brief Header file for global functions
- * 
+ *
  * Any experienced C or C++ programmer knows the importance of header files. For those who
  * do not, a header file allows multiple files to reference functions in other files without
  * necessarily having to see the code (and therefore causing a multiple definition). To make
@@ -42,17 +42,24 @@
 
 // This prevents multiple inclusion, which isn't bad for this file but is good practice
 #define MAIN_H_
-// Motors
-#define FRONT_LEFT 1
-#define FRONT_RIGHT 2
-#define BACK_LEFT 10
-#define BACK_RIGHT 9
-#define TOWER 3
-#define INTAKES 8
 
-#define MAX_LAUNCH_VAL 750
+// Motors
+#define FRONT_RIGHT 1
+#define FRONT_LEFT 2
+#define INTAKES 3
+#define CAT_1 4
+#define CAT_2 5
+#define CAT_3 6
+#define CAT_4 7
+#define TOWER 8
+#define BACK_LEFT 9
+#define BACK_RIGHT 10
+
+#define MAX_LAUNCH_VAL 1250
 #define AUTON_DECISION_VAL 1908
 #define MULTIPLIER 0.63
+#define POT_MAX_DIFF 2900
+#define NUM_AUTO_LAUNCHES 3
 
 #include <API.h>
 
@@ -176,12 +183,6 @@ void pullCatapultBack(int targetDiff);
  * Plays a sound
  */
 void playSound();
-/*
- * Individual intake/lift control
- * 7 UD control intake unless 8U is pressed down; if it is, it controls lift
- * Checks if intake system is being controlled by left rockers (button group 5) before stopping motors in loop
- */
-void checkForIndiv();
 /*
  * Stops all of the catapult motors
  */
