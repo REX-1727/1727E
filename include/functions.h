@@ -3,10 +3,8 @@
 #include "math.h"
 
 TaskHandle ultTask;
-bool switchPressed;
-bool running;
-int time = 0;
-int numLaunches = 0;
+bool switchPressed, running, pulledBack = false;
+int time = 0, numLaunches = 0;
 
 void setFullPower(int port, bool direction) {
 	int power = 127;
@@ -46,15 +44,15 @@ void stopCatapultMotors() {
 }
 
 void setCatapultMotors() {
-	// Controlled by second joystick
 	if (joystickGetDigital(1, 6, JOY_DOWN)) {
 		setCatapultMotorsToFull(true);
+		pulledBack = false;
 	} else if (joystickGetDigital(1, 6, JOY_UP)) {
 		setCatapultMotorsToFull(false);
-	} else {
-		if (!running) {
+		pulledBack = false;
+	} else if (!running && !pulledBack) {
 			stopCatapultMotors();
-		}
+
 	}
 }
 
@@ -91,7 +89,8 @@ void pullCatapultBack(int targetDiff) {
 	int diff = 0;
 	int potVal;
 	int initialPotVal = analogRead(1);
-	while (abs(diff) < targetDiff) {
+	int timeElapsed = millis();
+	while ((abs(diff) < targetDiff) && ((millis() - timeElapsed) <= 1500)) {
 		potVal = analogRead(1);
 		diff = initialPotVal - potVal;
 		setCatapultMotorsToFull(false);
@@ -99,6 +98,7 @@ void pullCatapultBack(int targetDiff) {
 		delay(20);
 	}
 	running = false;
+	pulledBack = true;
 }
 
 void launchCatapult(int length) {
@@ -107,31 +107,33 @@ void launchCatapult(int length) {
 	setFullPower(CAT_3, false);
 	setFullPower(CAT_4, false);
 	delay(length);
+	pulledBack = false;
+}
+
+void catapultResist() {
+	// Push back on motors to resist elasticity
+	motorSet(CAT_1, MOTOR_RESISTANCE);
+	motorSet(CAT_2, MOTOR_RESISTANCE);
+	motorSet(CAT_3, MOTOR_RESISTANCE);
+	motorSet(CAT_4, MOTOR_RESISTANCE);
 }
 
 void checkCatapult(void *ignore) {
 	while (1) {
-		if (joystickGetDigital(1, 8, JOY_DOWN)) {
+		if (joystickGetDigital(1, 8, JOY_DOWN) && !pulledBack) { // Currently pulled back
 			// Pull back catapult and prepare for launch
 			pullCatapultBack(POT_MAX_DIFF);
-
-			// Push back on motors to resist elasticity
-			int motorResistance = -40;
-			motorSet(CAT_1, motorResistance);
-			motorSet(CAT_2, motorResistance);
-			motorSet(CAT_3, motorResistance);
-			motorSet(CAT_4, motorResistance);
-		}
-		if (joystickGetDigital(1, 8, JOY_DOWN)) {
+			catapultResist();
+		} else if (joystickGetDigital(1, 8, JOY_DOWN)) {
 			launchCatapult(MAX_LAUNCH_VAL);
 			stopCatapultMotors();
-		}
-		if(joystickGetDigital(1, 8, JOY_UP)) {
+		} else if(joystickGetDigital(1, 8, JOY_UP)) {
 			for(int i = 1; i < NUM_AUTO_LAUNCHES; i++) {
 				pullCatapultBack(POT_MAX_DIFF);
-				delay(1500);
+				catapultResist();
+				delay(750);
 				launchCatapult(MAX_LAUNCH_VAL);
-				delay(2000);
+				stopCatapultMotors();
 			}
 		}
 		taskDelay(20);
@@ -234,19 +236,19 @@ void runTower(void *ignore) {
 	int delay;
 	switch (time) {
 	case 0:
-		delay = 500;
+		delay = 750;
 		break;
 	case 1:
-		delay = 1000;
+		delay = 1750;
 		break;
 	case 2:
-		delay = 1500;
+		delay = 2000;
 		break;
 	case 3:
-		delay = 1500;
+		delay = 0;
 		break;
 	default:
-		delay = 1000;
+		delay = 1500;
 		break;
 	}
 	setFullPower(TOWER, false);
@@ -262,16 +264,20 @@ void pullBackAndLaunch() {
 	// Pull back catapult using adjusted potentiometer values
 	time = 0;
 	for (int i = 0; i < 3; i++) {
-		// Run to bring in preloaded balls
-		taskCreate(runTower, TASK_DEFAULT_STACK_SIZE, NULL,
-				TASK_PRIORITY_DEFAULT);
+		// Run tower to bring in last preloaded ball (fourth time only)
+		taskCreate(runTower, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 		pullCatapultBack(POT_MAX_DIFF);
 		// Stop motors after pull back & wait for balls to move into catapult hand
 		stopCatapultMotors();
-		delay(600);
+		catapultResist();
+		delay(1250);
 		// Launch & repeat
 		launchCatapult(MAX_LAUNCH_VAL);
 		stopCatapultMotors();
+		// Deeper in the intakes needs a bit of delay
+		if(i == 1 || i == 2) {
+			delay(500);
+		}
 	}
 }
 
@@ -369,11 +375,11 @@ void checkForward() {
 	imeReset(0);
 	imeReset(1);
 
-	driveStraight(2325, 4600);
+	driveStraight(2210, 4500);
 
 	setFullPower(FRONT_LEFT, true);
 	setFullPower(BACK_LEFT, true);
-	delay(150);
+	delay(250);
 	motorStop(FRONT_LEFT);
 	motorStop(BACK_LEFT);
 
@@ -381,19 +387,5 @@ void checkForward() {
 }
 
 void moveAuto() {
-	// Reset encoder values before moving
-	imeReset(0);
-	imeReset(1);
-
-	driveStraight(1100, 3000);
-
 	pullBackAndLaunch();
-}
-
-void checkLimSwitch() {
-	// Insurance
-	delay(3000);
-	if (!switchPressed) {
-		motorStopAll();
-	}
 }

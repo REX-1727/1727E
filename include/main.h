@@ -46,20 +46,21 @@
 // Motors
 #define FRONT_RIGHT 1
 #define FRONT_LEFT 2
-#define INTAKES 3
+#define TOWER 3
 #define CAT_1 4
 #define CAT_2 5
 #define CAT_3 6
 #define CAT_4 7
-#define TOWER 8
+#define INTAKES 8
 #define BACK_LEFT 9
 #define BACK_RIGHT 10
 
-#define MAX_LAUNCH_VAL 1250
+#define MAX_LAUNCH_VAL 995
 #define AUTON_DECISION_VAL 1908
 #define MULTIPLIER 0.63
 #define POT_MAX_DIFF 2900
 #define NUM_AUTO_LAUNCHES 3
+#define MOTOR_RESISTANCE -30
 
 #include <API.h>
 
@@ -209,10 +210,6 @@ void moveAuto();
  * Corrects wheel movement w/ IMEs to move straight
  */
 void driveStraight();
-/*
- * Checks whether the limit switch has been pressed within 3 seconds of autonomous 1 starting
- */
-void checkLimSwitch();
 /*
  * Task to handle catapult auto-launching
  */
