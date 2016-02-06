@@ -55,21 +55,11 @@ void operatorControl() {
 	bool *lcdBacklight = initLcdVals();
 	taskResume(catTask);
 	while (1) {
-		//	 Set motor values to joystick values
-		int joyLeftVal = -joystickGetAnalog(1, 3), joyRightVal =
-				joystickGetAnalog(1, 2);
-
-		motorSet(FRONT_LEFT, joyLeftVal);
-		motorSet(BACK_LEFT, joyLeftVal);
-
-		motorSet(FRONT_RIGHT, joyRightVal);
-		motorSet(BACK_RIGHT, -joyRightVal);
+		// Joystick control of drive
+		checkDrive();
 
 		// Tower and intake control (Y-cabled into ports 3 and 8)
 		setTowerAndIntake();
-
-		// Check for button control of drive
-		checkForManualDrive();
 
 		// Manual catapult control
 		setCatapultMotors();

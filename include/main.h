@@ -55,10 +55,10 @@
 #define BACK_LEFT 9
 #define BACK_RIGHT 10
 
-#define MAX_LAUNCH_VAL 995
+#define MAX_LAUNCH_VAL 960
 #define AUTON_DECISION_VAL 1908
 #define MULTIPLIER 0.63
-#define POT_MAX_DIFF 2900
+#define POT_MAX_DIFF 2890
 #define NUM_AUTO_LAUNCHES 3
 #define MOTOR_RESISTANCE -30
 
@@ -130,6 +130,10 @@ void initialize();
  * This task should never exit; it should end with some kind of infinite loop, even if empty.
  */
 void operatorControl();
+/**
+* Joystick control of drive for opcontrol
+*/
+void checkDrive();
 /**
  * Sets up tower and intakes to run at the same rate
  */

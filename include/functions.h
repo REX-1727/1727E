@@ -3,8 +3,33 @@
 #include "math.h"
 
 TaskHandle ultTask;
-bool switchPressed, running, pulledBack = false;
+bool switchPressed, running, pulledBack = false, reversed = false;
 int time = 0, numLaunches = 0;
+
+void checkDrive() {
+	//	 Set motor values to joystick values
+	int joyLeftVal = -joystickGetAnalog(1, 3), joyRightVal = joystickGetAnalog(1, 2);
+
+	if(joystickGetDigital(1, 7, JOY_UP)) {
+				reversed = false;
+	} else if (joystickGetDigital(1, 7, JOY_DOWN)) {
+				reversed = true;
+	}
+
+	if(!reversed) {
+		motorSet(FRONT_LEFT, joyLeftVal);
+		motorSet(BACK_LEFT, joyLeftVal);
+
+		motorSet(FRONT_RIGHT, joyRightVal);
+		motorSet(BACK_RIGHT, -joyRightVal);
+	} else {
+		motorSet(FRONT_LEFT, joyRightVal);
+		motorSet(BACK_LEFT, joyRightVal);
+
+		motorSet(FRONT_RIGHT, joyLeftVal);
+		motorSet(BACK_RIGHT, -joyLeftVal);
+	}
+}
 
 void setFullPower(int port, bool direction) {
 	int power = 127;
