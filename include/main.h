@@ -55,12 +55,12 @@
 #define BACK_LEFT 9
 #define BACK_RIGHT 10
 
-#define MAX_LAUNCH_VAL 960
+#define MAX_LAUNCH_VAL 945
 #define AUTON_DECISION_VAL 1908
 #define MULTIPLIER 0.63
-#define POT_MAX_DIFF 2890
+#define POT_MAX_DIFF 760
 #define NUM_AUTO_LAUNCHES 3
-#define MOTOR_RESISTANCE -30
+#define MOTOR_RESISTANCE -25
 
 #include <API.h>
 

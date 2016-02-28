@@ -3,7 +3,7 @@
 #include "math.h"
 
 TaskHandle ultTask;
-bool switchPressed, running, pulledBack = false, reversed = false;
+bool switchPressed, running, pulledBack = false, reversed = false, firstCheck = true;
 int time = 0, numLaunches = 0;
 
 void checkDrive() {
@@ -11,9 +11,9 @@ void checkDrive() {
 	int joyLeftVal = -joystickGetAnalog(1, 3), joyRightVal = joystickGetAnalog(1, 2);
 
 	if(joystickGetDigital(1, 7, JOY_UP)) {
-				reversed = false;
+		reversed = false;
 	} else if (joystickGetDigital(1, 7, JOY_DOWN)) {
-				reversed = true;
+		reversed = true;
 	}
 
 	if(!reversed) {
@@ -68,16 +68,31 @@ void stopCatapultMotors() {
 	motorStop(CAT_4);
 }
 
+void catapultResist() {
+	// Push back on motors to resist elasticity
+	motorSet(CAT_1, MOTOR_RESISTANCE);
+	motorSet(CAT_2, MOTOR_RESISTANCE);
+	motorSet(CAT_3, MOTOR_RESISTANCE);
+	motorSet(CAT_4, MOTOR_RESISTANCE);
+}
+
 void setCatapultMotors() {
 	if (joystickGetDigital(1, 6, JOY_DOWN)) {
 		setCatapultMotorsToFull(true);
 		pulledBack = false;
+		firstCheck = true;
 	} else if (joystickGetDigital(1, 6, JOY_UP)) {
 		setCatapultMotorsToFull(false);
 		pulledBack = false;
-	} else if (!running && !pulledBack) {
+		firstCheck = true;
+	} else if (!running && !pulledBack && firstCheck) {
+		// Hold down button on release to trigger resistance
+		if(joystickGetDigital(1, 7, JOY_LEFT)) {
+			catapultResist();
+		} else {
 			stopCatapultMotors();
-
+		}
+		firstCheck = false;
 	}
 }
 
@@ -106,9 +121,6 @@ int getUltVal() {
 	return ultVal;
 }
 
-/*
- * targetVal = 2875
- */
 void pullCatapultBack(int targetDiff) {
 	running = true;
 	int diff = 0;
@@ -135,14 +147,6 @@ void launchCatapult(int length) {
 	pulledBack = false;
 }
 
-void catapultResist() {
-	// Push back on motors to resist elasticity
-	motorSet(CAT_1, MOTOR_RESISTANCE);
-	motorSet(CAT_2, MOTOR_RESISTANCE);
-	motorSet(CAT_3, MOTOR_RESISTANCE);
-	motorSet(CAT_4, MOTOR_RESISTANCE);
-}
-
 void checkCatapult(void *ignore) {
 	while (1) {
 		if (joystickGetDigital(1, 8, JOY_DOWN) && !pulledBack) { // Currently pulled back
@@ -154,11 +158,18 @@ void checkCatapult(void *ignore) {
 			stopCatapultMotors();
 		} else if(joystickGetDigital(1, 8, JOY_UP)) {
 			for(int i = 1; i < NUM_AUTO_LAUNCHES; i++) {
-				pullCatapultBack(POT_MAX_DIFF);
-				catapultResist();
-				delay(750);
-				launchCatapult(MAX_LAUNCH_VAL);
-				stopCatapultMotors();
+				if(joystickGetDigital(1, 6, JOY_DOWN)) {
+					break;
+				} else {
+					pullCatapultBack(POT_MAX_DIFF);
+					catapultResist();
+					delay(750);
+					launchCatapult(MAX_LAUNCH_VAL);
+					stopCatapultMotors();
+					setFullPower(TOWER, true);
+					delay(750);
+					motorStop(TOWER);
+				}
 			}
 		}
 		taskDelay(20);
@@ -314,28 +325,34 @@ void driveStraight(int target, int time) {
 	int rightVal = 0;
 	int leftVal = 0;
 	int averageVal = 0;
+	float rightVel = 0;
+	float leftVel = 0;
 	float kP_master, kI_master, kD_master;
 	float masterError, masterPreviousError, masterIntegral, masterDerivative,
-			masterOutput;
+	masterOutput;
 	int startTime = millis();
 
-	float kP_slave, kI_slave, kD_slave;
-	float slaveError, slavePreviousError, slaveIntegral, slaveDerivative,
-			slaveOutput, slaveFinal;
+	float kP_differential, kI_differential, kD_differential;
+	float differentialError, differentialPreviousError, differentialIntegral, differentialDerivative,
+	differentialOutput;
 
-	float slaveFactor;
+	float leftFinal, rightFinal;
+
+
+
 	kP_master = .15;
-	kI_master = .000001;
+	kI_master = .00000;
 	kD_master = .2;
-	kP_slave = .05;
-	kI_slave = .0001;
-	kD_slave = 0;
+	kP_differential = .05;
+	kI_differential = .000;
+	kD_differential = 0;
 	masterPreviousError = 0;
-	slavePreviousError = 0;
+	differentialPreviousError = 0;
 	while (millis() < startTime + time) {
 		imeGet(0, &leftVal);
 		imeGet(1, &rightVal);
-
+		imeGetVelocity(0, &leftVel);
+		imeGetVelocity(1, &rightVel);
 		rightVal = abs(rightVal);
 		leftVal = abs(leftVal);
 
@@ -349,47 +366,41 @@ void driveStraight(int target, int time) {
 			masterIntegral = 100;
 
 		masterOutput = (masterError * kP_master) + (masterIntegral * kI_master)
-				+ (masterDerivative * kD_master), 127;
+						+ (masterDerivative * kD_master);
 
-		if (masterOutput > 127)
-			masterOutput = 127;
+		if (masterOutput > 100){
+			masterOutput = 100;
+		}
 
-		slaveError = leftVal - rightVal;
-		slaveIntegral += slavePreviousError;
-		slaveDerivative = slaveError - slavePreviousError;
-		if (slaveError == 0)
-			slaveIntegral = 0;
-		if (slaveIntegral > 100)
-			slaveIntegral = 100;
-
-		slaveFactor = masterError/100;
-
-		if(slaveFactor>1)
-			slaveFactor = 1;
-
-		if(slaveFactor<.1)
-			slaveFactor = 0;
-
-		slaveOutput = (slaveError * kP_slave) + (slaveIntegral * kI_slave)
-				+ (slaveDerivative * kD_slave);
+		if(masterError > 360) {
+			differentialError = leftVel - rightVel;
+			differentialIntegral += differentialPreviousError;
+			differentialDerivative = differentialError - differentialPreviousError;
+			if (differentialError == 0)
+				differentialIntegral = 0;
+			if (differentialIntegral > 100)
+				differentialIntegral = 100;
 
 
-		slaveOutput = slaveOutput*(slaveFactor);
+			differentialOutput = (differentialError * kP_differential) + (differentialIntegral * kI_differential)
+						+ (differentialDerivative * kD_differential);
 
-		slaveFinal = masterOutput + slaveOutput;
+		}
+
+		rightFinal = masterOutput + differentialOutput;
+		leftFinal = masterOutput - differentialOutput;
 
 		lcdPrint(uart1, 1, "M: %f, %d", masterOutput, averageVal);
-		lcdPrint(uart1, 2, "S: %f", slaveFinal);
 		lcdPrint(uart2, 1, "R: %d", rightVal);
 		lcdPrint(uart2, 2, "L: %d", leftVal);
 
 		// Left motor master
-		motorSet(FRONT_LEFT, -masterOutput);
-		motorSet(BACK_LEFT, -masterOutput);
+		motorSet(FRONT_LEFT, -leftFinal);
+		motorSet(BACK_LEFT, -leftFinal);
 
 		// Right motor slave
-		motorSet(FRONT_RIGHT, slaveFinal);
-		motorSet(BACK_RIGHT, -slaveFinal);
+		motorSet(FRONT_RIGHT, rightFinal);
+		motorSet(BACK_RIGHT, -rightFinal);
 
 		delay(20);
 	}
@@ -400,13 +411,7 @@ void checkForward() {
 	imeReset(0);
 	imeReset(1);
 
-	driveStraight(2210, 4500);
-
-	setFullPower(FRONT_LEFT, true);
-	setFullPower(BACK_LEFT, true);
-	delay(250);
-	motorStop(FRONT_LEFT);
-	motorStop(BACK_LEFT);
+	driveStraight(2440, 6000);
 
 	pullBackAndLaunch();
 }
