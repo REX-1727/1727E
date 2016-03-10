@@ -55,10 +55,10 @@
 #define BACK_LEFT 9
 #define BACK_RIGHT 10
 
-#define MAX_LAUNCH_VAL 945
+#define MAX_LAUNCH_VAL 77
 #define AUTON_DECISION_VAL 1908
 #define MULTIPLIER 0.63
-#define POT_MAX_DIFF 760
+#define POT_MAX_DIFF 625
 #define NUM_AUTO_LAUNCHES 3
 #define MOTOR_RESISTANCE -25
 
@@ -222,6 +222,8 @@ extern TaskHandle catTask;
  * Global flag to see whether catapult is being pulled back
  */
 extern bool running;
+/**/
+extern Gyro gy;
 // End C++ export structure
 #ifdef __cplusplus
 }

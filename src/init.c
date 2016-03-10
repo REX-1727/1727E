@@ -59,11 +59,13 @@ void initializeIO() {
  * can be implemented in this task if desired.
  */
 TaskHandle catTask;
+Gyro gy;
 void initialize() {
 	lcdInit(uart1 );
 	lcdInit(uart2 );
 	speakerInit();
 	imeInitializeAll();
+	gy = gyroInit(3, 0);
 
 	//	taskCreate(playSound, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//	ultTask = taskCreate(checkUlt, TASK_DEFAULT_STACK_SIZE, NULL,

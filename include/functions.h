@@ -325,8 +325,8 @@ void driveStraight(int target, int time) {
 	int rightVal = 0;
 	int leftVal = 0;
 	int averageVal = 0;
-	float rightVel = 0;
-	float leftVel = 0;
+	int rightVel = 0;
+	int leftVel = 0;
 	float kP_master, kI_master, kD_master;
 	float masterError, masterPreviousError, masterIntegral, masterDerivative,
 	masterOutput;
@@ -336,16 +336,15 @@ void driveStraight(int target, int time) {
 	float differentialError, differentialPreviousError, differentialIntegral, differentialDerivative,
 	differentialOutput;
 
-	float leftFinal, rightFinal;
-
-
+	float leftFinal = 0, rightFinal = 0;
+	float leftRatio = 1, rightRatio = 1;
 
 	kP_master = .15;
 	kI_master = .00000;
 	kD_master = .2;
 	kP_differential = .05;
 	kI_differential = .000;
-	kD_differential = 0;
+	kD_differential = 25;
 	masterPreviousError = 0;
 	differentialPreviousError = 0;
 	while (millis() < startTime + time) {
@@ -373,7 +372,7 @@ void driveStraight(int target, int time) {
 		}
 
 		if(masterError > 360) {
-			differentialError = leftVel - rightVel;
+			differentialError = -gyroGet(gy);
 			differentialIntegral += differentialPreviousError;
 			differentialDerivative = differentialError - differentialPreviousError;
 			if (differentialError == 0)
@@ -385,14 +384,19 @@ void driveStraight(int target, int time) {
 			differentialOutput = (differentialError * kP_differential) + (differentialIntegral * kI_differential)
 						+ (differentialDerivative * kD_differential);
 
+			rightFinal = masterOutput + differentialOutput;
+			leftFinal = masterOutput - differentialOutput;
+
+			lcdPrint(uart1, 1, "M: %f, %d", masterOutput, averageVal);
+			lcdPrint(uart2, 1, "R: %d", rightVal);
+			lcdPrint(uart2, 2, "L: %d", leftVal);
+
+			rightRatio = rightFinal / masterOutput;
+			leftRatio = leftFinal / masterOutput;
+		} else {
+			rightFinal = masterOutput * rightRatio;
+			leftFinal = masterOutput * leftRatio;
 		}
-
-		rightFinal = masterOutput + differentialOutput;
-		leftFinal = masterOutput - differentialOutput;
-
-		lcdPrint(uart1, 1, "M: %f, %d", masterOutput, averageVal);
-		lcdPrint(uart2, 1, "R: %d", rightVal);
-		lcdPrint(uart2, 2, "L: %d", leftVal);
 
 		// Left motor master
 		motorSet(FRONT_LEFT, -leftFinal);
@@ -411,7 +415,7 @@ void checkForward() {
 	imeReset(0);
 	imeReset(1);
 
-	driveStraight(2440, 6000);
+	driveStraight(2440, 7000);
 
 	pullBackAndLaunch();
 }
