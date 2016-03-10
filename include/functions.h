@@ -3,6 +3,7 @@
 #include "math.h"
 
 TaskHandle ultTask;
+Gyro gy;
 bool switchPressed, running, pulledBack = false, reversed = false, firstCheck = true;
 int time = 0, numLaunches = 0;
 
@@ -321,6 +322,9 @@ void driveStraight(int target, int time) {
 	// Left side: IME0, MOTOR9
 	// Right side: IME1, MOTOR10
 
+	// Reinit gyro
+	gy = gyroInit(3, 0);
+
 	// PID loop to drive straight
 	int rightVal = 0;
 	int leftVal = 0;
@@ -415,7 +419,7 @@ void checkForward() {
 	imeReset(0);
 	imeReset(1);
 
-	driveStraight(2440, 7000);
+	driveStraight(2400, 7000);
 
 	pullBackAndLaunch();
 }

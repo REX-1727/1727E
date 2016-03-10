@@ -55,7 +55,7 @@
 #define BACK_LEFT 9
 #define BACK_RIGHT 10
 
-#define MAX_LAUNCH_VAL 77
+#define MAX_LAUNCH_VAL 950
 #define AUTON_DECISION_VAL 1908
 #define MULTIPLIER 0.63
 #define POT_MAX_DIFF 615
