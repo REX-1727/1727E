@@ -449,38 +449,10 @@ void driveStraight(int target, int time) {
 
 void checkForward() {
 	// Reset encoder values before moving
-<<<<<<< HEAD
-	// imeReset(0);
-	// imeReset(1);
-	//
-	// driveStraight(2240, 3500);
-
-	setFullPower(BACK_LEFT, false);
-	setFullPower(BACK_RIGHT, false);
-	setFullPower(FRONT_LEFT, false);
-	setFullPower(FRONT_RIGHT, true);
-
-	delay(3300);
-
-	motorStop(BACK_LEFT);
-	motorStop(BACK_RIGHT);
-	motorStop(FRONT_LEFT);
-	motorStop(FRONT_RIGHT);
-=======
 	imeReset(0);
 	imeReset(1);
-	int gyVal = gyroGet(gy);
-	driveStraight(2240, 3000);
-
-	int newGyVal = gyroGet(gy);
-	while(newGyVal != gyVal) {
-		setFullPower(FRONT_LEFT, true);
-		setFullPower(BACK_LEFT, true);
-		newGyVal = gyroGet(gy);
-	}
-	motorStop(FRONT_LEFT);
-	motorStop(BACK_LEFT);
->>>>>>> parent of 850ad3c... Pre-big removal of IMEs
+	
+	driveStraight(2240, 3500);
 
 	pullBackAndLaunch();
 }
