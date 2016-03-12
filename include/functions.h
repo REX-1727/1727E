@@ -449,6 +449,7 @@ void driveStraight(int target, int time) {
 
 void checkForward() {
 	// Reset encoder values before moving
+<<<<<<< HEAD
 	// imeReset(0);
 	// imeReset(1);
 	//
@@ -465,6 +466,21 @@ void checkForward() {
 	motorStop(BACK_RIGHT);
 	motorStop(FRONT_LEFT);
 	motorStop(FRONT_RIGHT);
+=======
+	imeReset(0);
+	imeReset(1);
+	int gyVal = gyroGet(gy);
+	driveStraight(2240, 3000);
+
+	int newGyVal = gyroGet(gy);
+	while(newGyVal != gyVal) {
+		setFullPower(FRONT_LEFT, true);
+		setFullPower(BACK_LEFT, true);
+		newGyVal = gyroGet(gy);
+	}
+	motorStop(FRONT_LEFT);
+	motorStop(BACK_LEFT);
+>>>>>>> parent of 850ad3c... Pre-big removal of IMEs
 
 	pullBackAndLaunch();
 }
