@@ -65,7 +65,7 @@ void initialize() {
 	speakerInit();
 	imeInitializeAll();
 
-	//	taskCreate(playSound, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
+		taskCreate(playSound, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//	ultTask = taskCreate(checkUlt, TASK_DEFAULT_STACK_SIZE, NULL,
 	//			TASK_PRIORITY_DEFAULT);
 	//	taskSuspend(ultTask);

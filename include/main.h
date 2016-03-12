@@ -58,9 +58,10 @@
 #define MAX_LAUNCH_VAL 950
 #define AUTON_DECISION_VAL 1908
 #define MULTIPLIER 0.63
-#define POT_MAX_DIFF 615
+#define POT_MAX_DIFF 600
 #define NUM_AUTO_LAUNCHES 3
 #define MOTOR_RESISTANCE -25
+#define CAT_PARTIAL_POWER -63
 
 #include <API.h>
 
@@ -152,6 +153,10 @@ void setCatapultMotorsToFull(bool direction);
  * @param port Which motor port to set to full power
  * @param direction Bool to indicate which direction: true for positive and false for negative
  */
+ /*
+ * Set manual value for catapult motors
+ */
+ void runCatapultMotors(int power);
 void setFullPower(int port, bool direction);
 /*
  * Calculate battery percentage and display as bars on LCD
@@ -161,7 +166,8 @@ void showBatteryOnLcd(int *lcd);
  * Turns backlight on if power source is computer
  * Battery level is 0, so main battery is turned off and must be powered by computer if on
  * @return Bool indicating whether the backlight should be off or on
- */bool checkBattery(int *lcd);
+ */
+ bool checkBattery(int *lcd);
 /*
  * Grabs potentiometer value at a given moment (should be placed in loop) and prints to LCD
  */
@@ -215,6 +221,10 @@ void moveAuto();
  */
 void driveStraight();
 /*
+*  Variable delays
+*/
+void delayLaunch(int time);
+/*
  * Task to handle catapult auto-launching
  */
 extern TaskHandle catTask;
@@ -222,7 +232,9 @@ extern TaskHandle catTask;
  * Global flag to see whether catapult is being pulled back
  */
 extern bool running;
-/**/
+/*
+*  Global gyro object
+*/
 extern Gyro gy;
 // End C++ export structure
 #ifdef __cplusplus

@@ -62,6 +62,13 @@ void setCatapultMotorsToFull(bool direction) {
 	setFullPower(CAT_4, direction);
 }
 
+void runCatapultMotors(int power) {
+	motorSet(CAT_1, power);
+	motorSet(CAT_2, power);
+	motorSet(CAT_3, power);
+	motorSet(CAT_4, power);
+}
+
 void stopCatapultMotors() {
 	motorStop(CAT_1);
 	motorStop(CAT_2);
@@ -131,7 +138,11 @@ void pullCatapultBack(int targetDiff) {
 	while ((abs(diff) < targetDiff) && ((millis() - timeElapsed) <= 1500)) {
 		potVal = analogRead(1);
 		diff = initialPotVal - potVal;
-		setCatapultMotorsToFull(false);
+		if(abs(diff) < targetDiff * 0.75) {
+			setCatapultMotorsToFull(false);
+		} else {
+			runCatapultMotors(CAT_PARTIAL_POWER);
+		}
 		lcdPrint(uart1, 2, "%d", diff);
 		delay(20);
 	}
@@ -282,7 +293,7 @@ void runTower(void *ignore) {
 		delay = 2000;
 		break;
 	case 3:
-		delay = 0;
+		delay = 100;
 		break;
 	default:
 		delay = 1500;
@@ -294,6 +305,28 @@ void runTower(void *ignore) {
 	time++;
 }
 
+void delayLaunch(int time) {
+	int del;
+	switch(time) {
+		case 0:
+			del = 1250;
+			break;
+		case 1:
+			del = 1250;
+			break;
+		case 2:
+			del = 1500;
+			break;
+		case 3:
+			del = 1000;
+			break;
+		default:
+			del = 1250;
+			break;
+	}
+	delay(del);
+}
+
 void pullBackAndLaunch() {
 	// Launch loaded ball first; will be in the pulled back position initially
 	launchCatapult(MAX_LAUNCH_VAL);
@@ -301,19 +334,19 @@ void pullBackAndLaunch() {
 	// Pull back catapult using adjusted potentiometer values
 	time = 0;
 	for (int i = 0; i < 3; i++) {
-		// Run tower to bring in last preloaded ball (fourth time only)
+		// Run tower to bring in last preloaded ball
 		taskCreate(runTower, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 		pullCatapultBack(POT_MAX_DIFF);
 		// Stop motors after pull back & wait for balls to move into catapult hand
 		stopCatapultMotors();
 		catapultResist();
-		delay(1250);
+		delayLaunch(i);
 		// Launch & repeat
 		launchCatapult(MAX_LAUNCH_VAL);
 		stopCatapultMotors();
 		// Deeper in the intakes needs a bit of delay
 		if(i == 1 || i == 2) {
-			delay(500);
+			delay(650);
 		}
 	}
 }
@@ -418,8 +451,17 @@ void checkForward() {
 	// Reset encoder values before moving
 	imeReset(0);
 	imeReset(1);
+	int gyVal = gyroGet(gy);
+	driveStraight(2240, 3000);
 
-	driveStraight(2400, 7000);
+	int newGyVal = gyroGet(gy);
+	while(newGyVal != gyVal) {
+		setFullPower(FRONT_LEFT, true);
+		setFullPower(BACK_LEFT, true);
+		newGyVal = gyroGet(gy);
+	}
+	motorStop(FRONT_LEFT);
+	motorStop(BACK_LEFT);
 
 	pullBackAndLaunch();
 }
