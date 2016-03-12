@@ -451,17 +451,8 @@ void checkForward() {
 	// Reset encoder values before moving
 	imeReset(0);
 	imeReset(1);
-	int gyVal = gyroGet(gy);
-	driveStraight(2240, 3000);
 
-	int newGyVal = gyroGet(gy);
-	while(newGyVal != gyVal) {
-		setFullPower(FRONT_LEFT, true);
-		setFullPower(BACK_LEFT, true);
-		newGyVal = gyroGet(gy);
-	}
-	motorStop(FRONT_LEFT);
-	motorStop(BACK_LEFT);
+	driveStraight(2240, 3500);
 
 	pullBackAndLaunch();
 }

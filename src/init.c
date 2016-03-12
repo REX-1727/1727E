@@ -63,7 +63,7 @@ void initialize() {
 	lcdInit(uart1 );
 	lcdInit(uart2 );
 	speakerInit();
-	imeInitializeAll();
+	// imeInitializeAll();
 
 		taskCreate(playSound, TASK_DEFAULT_STACK_SIZE, NULL, TASK_PRIORITY_DEFAULT);
 	//	ultTask = taskCreate(checkUlt, TASK_DEFAULT_STACK_SIZE, NULL,
