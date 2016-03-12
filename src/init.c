@@ -60,8 +60,8 @@ void initializeIO() {
  */
 TaskHandle catTask;
 void initialize() {
-	lcdInit(uart1 );
-	lcdInit(uart2 );
+	lcdInit(uart1);
+	lcdInit(uart2);
 	speakerInit();
 	imeInitializeAll();
 
