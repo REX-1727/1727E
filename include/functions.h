@@ -451,8 +451,16 @@ void checkForward() {
 	// Reset encoder values before moving
 	imeReset(0);
 	imeReset(1);
-	
+
 	driveStraight(2240, 3500);
+
+	setFullPower(FRONT_LEFT, true);
+	setFullPower(BACK_LEFT, true);
+
+	delay(150);
+
+	motorStop(FRONT_LEFT);
+	motorStop(BACK_LEFT);
 
 	pullBackAndLaunch();
 }
